@@ -1,0 +1,177 @@
+import StoryModel from '../../data/story-model.js';
+import DetailStoryPresenter from '../../presenter/detail-story-presenter.js';
+import { parseActivePathname } from '../../routes/url-parser';
+import { 
+  showFormattedDate, 
+  loadMapScript, 
+  isUserLoggedIn, 
+  debugLog 
+} from '../../utils';
+
+export default class DetailStoryPage {
+  constructor() {
+    this._storyModel = new StoryModel();
+    const { id } = parseActivePathname();
+    
+    this._presenter = new DetailStoryPresenter({
+      view: this,
+      model: this._storyModel,
+      storyId: id
+    });
+    
+    this._map = null;
+    this._mapError = false;
+    this._story = null;
+  }
+
+  async render() {
+    return `
+      <section id="content" class="container" tabindex="-1">
+        <div id="story-detail-container">
+          <div class="loading">
+            <div class="loading-spinner"></div>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  async afterRender() {
+    if (!isUserLoggedIn()) {
+      window.location.hash = '#/login';
+      return;
+    }
+    
+    await this._presenter.loadStoryDetail();
+  }
+  
+  showLoading() {
+    const container = document.getElementById('story-detail-container');
+    if (container) {
+      container.innerHTML = `
+        <div class="loading">
+          <div class="loading-spinner"></div>
+        </div>
+      `;
+    }
+  }
+  
+  // TAMBAHKAN METHOD INI - INI YANG HILANG!
+  hideLoading() {
+    // Method ini dipanggil setelah loading selesai
+    // Karena kita sudah render content di renderStoryDetail() atau showErrorMessage(),
+    // kita tidak perlu melakukan apa-apa di sini
+    // Loading akan hilang otomatis ketika content baru di-render
+    debugLog('Loading hidden');
+  }
+  
+  renderStoryDetail(story) {
+    this._story = story;
+    const container = document.getElementById('story-detail-container');
+    if (!container) return;
+    
+    try {
+      container.innerHTML = `
+        <div class="story-detail">
+          <img 
+            src="${story.photoUrl}" 
+            alt="Cerita dari ${story.name}" 
+            class="story-detail-image"
+            onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';"
+          >
+          <div class="story-detail-content">
+            <h1 class="story-detail-title">Cerita dari ${story.name}</h1>
+            
+            <div class="story-detail-meta">
+              <span class="story-date">
+                <i class="far fa-calendar-alt"></i>
+                ${showFormattedDate(story.createdAt)}
+              </span>
+              
+              ${story.lat && story.lon ? `
+                <span class="story-location">
+                  <i class="fas fa-map-marker-alt"></i>
+                  ${this._mapError 
+                    ? `Lokasi: ${story.lat.toFixed(6)}, ${story.lon.toFixed(6)}`
+                    : 'Lokasi tersedia'
+                  }
+                </span>
+              ` : ''}
+            </div>
+            
+            <p class="story-detail-description">${story.description || 'Tidak ada deskripsi'}</p>
+            
+            ${story.lat && story.lon ? `
+              <div id="story-detail-map" class="story-detail-map"></div>
+            ` : ''}
+            
+            <div style="margin-top: 20px;">
+              <a href="#/" class="btn btn-primary">
+                <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+              </a>
+            </div>
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      debugLog('Error rendering story detail:', error);
+      this.showErrorMessage(error.message);
+    }
+  }
+  
+  showErrorMessage(message) {
+    const container = document.getElementById('story-detail-container');
+    if (container) {
+      container.innerHTML = `
+        <div class="alert alert-error">
+          <p><i class="fas fa-exclamation-triangle"></i> Terjadi kesalahan saat memuat detail cerita.</p>
+          <p>${message || 'Kesalahan tidak diketahui'}</p>
+          <p><a href="#/" class="btn btn-primary"><i class="fas fa-home"></i> Kembali ke beranda</a></p>
+        </div>
+      `;
+    }
+  }
+  
+  async initMap(lat, lon, story) {
+    try {
+      const L = await loadMapScript();
+      const mapContainer = document.getElementById('story-detail-map');
+      if (!mapContainer) {
+        throw new Error('Map container not found');
+      }
+      
+      this._map = L.map('story-detail-map').setView([lat, lon], 13);
+      
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      }).addTo(this._map);
+      
+      const marker = L.marker([lat, lon]).addTo(this._map);
+      
+      marker.bindPopup(`
+        <div>
+          <h3>${story.name}</h3>
+          <p>${story.description?.substring(0, 50)}${story.description?.length > 50 ? '...' : ''}</p>
+        </div>
+      `).openPopup();
+    } catch (error) {
+      this.handleMapError(error);
+      throw error;
+    }
+  }
+  
+  handleMapError(error) {
+    debugLog('Error initializing map:', error);
+    this._mapError = true;
+    
+    const mapContainer = document.getElementById('story-detail-map');
+    if (mapContainer && this._story) {
+      mapContainer.innerHTML = `
+        <div class="alert alert-error">
+          <p>Gagal memuat peta. Koordinat lokasi: ${this._story.lat?.toFixed(6)}, ${this._story.lon?.toFixed(6)}</p>
+          <p>Error: ${error.message || 'Kesalahan tidak diketahui'}</p>
+        </div>
+      `;
+    }
+  }
+}

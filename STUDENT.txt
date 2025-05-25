@@ -1,0 +1,30 @@
+Nama: Kharisma Maulida Saara
+Email: kharismamlda04@gmail.com
+ID Dicoding: FC331D5X2383
+
+Informasi API key:
+- Map API Key: YOUR_MAP_KEY
+  - Catatan: Aplikasi menggunakan Leaflet dengan OpenStreetMap yang tidak memerlukan API key. 
+    Jika ingin menggunakan Google Maps sebagai alternatif, silakan ganti nilai MAP_KEY di config.js
+
+Cara menjalankan aplikasi:
+1. Install dependencies: npm install
+2. Development mode: npm run start-dev
+3. Build production: npm run build
+
+Fitur aplikasi:
+1. Registrasi dan login pengguna
+2. Melihat daftar cerita
+3. Melihat detail cerita
+4. Menambahkan cerita baru dengan kamera
+5. Menentukan lokasi cerita menggunakan peta
+6. Melihat lokasi cerita di peta
+
+Troubleshooting tips:
+- Jika kamera tidak berfungsi, pastikan memberikan izin kamera di browser
+- Jika peta tidak muncul, periksa koneksi internet dan reload halaman
+- Pastikan aplikasi dijalankan di browser modern (Chrome, Firefox, Edge terbaru)
+
+Catatan tambahan:
+- Aplikasi dioptimalkan untuk tampilan mobile dan desktop
+- Sudah menerapkan semua kriteria wajib dari submission
