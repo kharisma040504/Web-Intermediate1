@@ -1,6 +1,9 @@
 import CONFIG from "../config";
 import { logger } from "./logger";
 
+const VAPID_PUBLIC_KEY =
+  "BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk";
+
 export function showFormattedDate(
   date,
   locale = CONFIG.DEFAULT_LANGUAGE,
@@ -388,6 +391,50 @@ export function getAuthorizationHeader() {
     debugLog("Error mendapatkan header otorisasi:", error);
     throw error;
   }
+}
+
+export function urlB64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding)
+    .replace(/\-/g, "+")
+    .replace(/_/g, "/");
+
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export async function requestNotificationPermission() {
+  if (!("Notification" in window)) {
+    throw new Error("Browser tidak mendukung notifikasi");
+  }
+
+  if (Notification.permission === "granted") {
+    return true;
+  }
+
+  if (Notification.permission !== "denied") {
+    const permission = await Notification.requestPermission();
+    return permission === "granted";
+  }
+
+  return false;
+}
+
+export async function subscribeUserToPush(registration) {
+  const subscribeOptions = {
+    userVisibleOnly: true,
+    applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY),
+  };
+
+  const pushSubscription = await registration.pushManager.subscribe(
+    subscribeOptions
+  );
+  return pushSubscription;
 }
 
 export { logger };

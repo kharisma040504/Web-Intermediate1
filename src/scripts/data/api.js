@@ -197,3 +197,71 @@ export const addStory = async (formData) => {
     };
   }
 };
+
+export const subscribeNotification = async (subscription) => {
+  try {
+    const userData = getUserData();
+
+    if (!userData || !userData.token) {
+      throw new Error("Token tidak tersedia. Silakan login terlebih dahulu.");
+    }
+
+    const response = await fetch(`${CONFIG.BASE_URL}/notifications/subscribe`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userData.token}`,
+      },
+      body: JSON.stringify(subscription),
+    });
+
+    const responseJson = await response.json();
+
+    if (!response.ok || responseJson.error) {
+      throw new Error(responseJson.message || "Gagal berlangganan notifikasi");
+    }
+
+    return responseJson;
+  } catch (error) {
+    console.error("Error subscribe notification:", error);
+    return {
+      error: true,
+      message: error.message || "Gagal berlangganan notifikasi",
+    };
+  }
+};
+
+export const unsubscribeNotification = async (endpoint) => {
+  try {
+    const userData = getUserData();
+
+    if (!userData || !userData.token) {
+      throw new Error("Token tidak tersedia. Silakan login terlebih dahulu.");
+    }
+
+    const response = await fetch(`${CONFIG.BASE_URL}/notifications/subscribe`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${userData.token}`,
+      },
+      body: JSON.stringify({ endpoint }),
+    });
+
+    const responseJson = await response.json();
+
+    if (!response.ok || responseJson.error) {
+      throw new Error(
+        responseJson.message || "Gagal berhenti berlangganan notifikasi"
+      );
+    }
+
+    return responseJson;
+  } catch (error) {
+    console.error("Error unsubscribe notification:", error);
+    return {
+      error: true,
+      message: error.message || "Gagal berhenti berlangganan notifikasi",
+    };
+  }
+};

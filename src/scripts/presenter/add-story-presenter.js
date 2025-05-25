@@ -34,9 +34,32 @@ class AddStoryPresenter {
       debugLog("Mengirim data cerita dengan valid data");
 
       const response = await this._model.addStory(formData);
-      this._view.showSuccessMessage("Cerita berhasil ditambahkan");
 
-      return true;
+      if (!response.error) {
+        this._view.showSuccessMessage("Cerita berhasil ditambahkan");
+
+        if ("serviceWorker" in navigator) {
+          try {
+            const registration = await navigator.serviceWorker.ready;
+            await registration.showNotification("Story berhasil dibuat", {
+              body: `Anda telah membuat story baru dengan deskripsi: ${description}`,
+              icon: "./favicon.png",
+              badge: "./favicon.png",
+              tag: "story-created",
+              requireInteraction: true,
+              data: {
+                url: "#/",
+              },
+            });
+          } catch (notifError) {
+            console.error("Gagal menampilkan notifikasi:", notifError);
+          }
+        }
+
+        return true;
+      } else {
+        throw new Error(response.message || "Gagal menambahkan cerita");
+      }
     } catch (error) {
       debugLog("Error adding story:", error);
       this._view.showErrorMessage(error.message);
