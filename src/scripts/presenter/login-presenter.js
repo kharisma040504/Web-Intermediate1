@@ -3,10 +3,7 @@ import {
   saveUserData,
   debugLog,
   showNotification,
-  requestNotificationPermission,
-  subscribeUserToPush,
 } from "../utils";
-import { subscribeNotification } from "../data/api";
 
 class LoginPresenter {
   constructor({ view, model }) {
@@ -34,8 +31,6 @@ class LoginPresenter {
 
       saveUserData(response.loginResult, rememberMe);
 
-      await this.initializePushNotificationAfterLogin();
-
       this._view.showSuccessMessage("Login berhasil. Mengalihkan...");
       showNotification("Berhasil", "Login berhasil", "success");
 
@@ -58,49 +53,6 @@ class LoginPresenter {
       return false;
     } finally {
       this._view.hideLoading();
-    }
-  }
-
-  async initializePushNotificationAfterLogin() {
-    try {
-      const hasPermission = await requestNotificationPermission();
-      if (!hasPermission) {
-        console.log("Izin notifikasi ditolak");
-        return;
-      }
-
-      const registration = await navigator.serviceWorker.ready;
-      const existingSubscription =
-        await registration.pushManager.getSubscription();
-
-      if (!existingSubscription) {
-        const subscription = await subscribeUserToPush(registration);
-
-        const subscriptionData = {
-          endpoint: subscription.endpoint,
-          keys: {
-            p256dh: btoa(
-              String.fromCharCode.apply(
-                null,
-                new Uint8Array(subscription.getKey("p256dh"))
-              )
-            ),
-            auth: btoa(
-              String.fromCharCode.apply(
-                null,
-                new Uint8Array(subscription.getKey("auth"))
-              )
-            ),
-          },
-        };
-
-        const response = await subscribeNotification(subscriptionData);
-        if (!response.error) {
-          console.log("Berhasil berlangganan push notification setelah login");
-        }
-      }
-    } catch (error) {
-      console.error("Gagal setup push notification setelah login:", error);
     }
   }
 }

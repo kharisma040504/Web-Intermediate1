@@ -1,4 +1,4 @@
-import { debugLog, showNotification } from "../utils";
+import { debugLog, showNotification, checkSubscriptionStatus } from "../utils";
 
 class AddStoryPresenter {
   constructor({ view, model }) {
@@ -34,28 +34,32 @@ class AddStoryPresenter {
       debugLog("Mengirim data cerita dengan valid data");
 
       const response = await this._model.addStory(formData);
-
+      
       if (!response.error) {
         this._view.showSuccessMessage("Cerita berhasil ditambahkan");
-
-        if ("serviceWorker" in navigator) {
+        
+        const isSubscribed = await checkSubscriptionStatus();
+        
+        if (isSubscribed && 'serviceWorker' in navigator) {
           try {
             const registration = await navigator.serviceWorker.ready;
-            await registration.showNotification("Story berhasil dibuat", {
+            await registration.showNotification('Story berhasil dibuat', {
               body: `Anda telah membuat story baru dengan deskripsi: ${description}`,
-              icon: "./favicon.png",
-              badge: "./favicon.png",
-              tag: "story-created",
+              icon: './favicon.png',
+              badge: './favicon.png',
+              tag: 'story-created',
               requireInteraction: true,
               data: {
-                url: "#/",
-              },
+                url: '#/'
+              }
             });
           } catch (notifError) {
-            console.error("Gagal menampilkan notifikasi:", notifError);
+            console.error('Gagal menampilkan notifikasi:', notifError);
           }
+        } else if (!isSubscribed) {
+          console.log('User belum berlangganan notifikasi, tidak menampilkan notifikasi');
         }
-
+        
         return true;
       } else {
         throw new Error(response.message || "Gagal menambahkan cerita");

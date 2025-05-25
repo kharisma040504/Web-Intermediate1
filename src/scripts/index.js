@@ -1,11 +1,6 @@
 import "../styles/styles.css";
 import App from "./pages/app";
-import {
-  requestNotificationPermission,
-  subscribeUserToPush,
-  getUserData,
-} from "./utils";
-import { subscribeNotification } from "./data/api";
+import { getUserData, createNotificationButton } from "./utils";
 
 let appInstance = null;
 
@@ -53,6 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       await appInstance.renderPage();
+      updateNotificationButtonVisibility();
     } catch (error) {
       console.error("Error rendering page:", error);
     } finally {
@@ -84,7 +80,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         console.log("Checking for service worker updates...");
       }, 60 * 60 * 1000);
 
-      await initializePushNotification();
+      setupNotificationButton();
     } catch (error) {
       console.error("Service worker registration failed:", error);
     }
@@ -97,60 +93,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 });
 
-async function initializePushNotification() {
-  try {
-    const hasPermission = await requestNotificationPermission();
-    if (!hasPermission) {
-      console.log("Izin notifikasi ditolak");
-      return;
-    }
+function setupNotificationButton() {
+  createNotificationButton();
+  updateNotificationButtonVisibility();
 
-    const registration = await navigator.serviceWorker.ready;
-    const existingSubscription =
-      await registration.pushManager.getSubscription();
+  window.addEventListener("hashchange", updateNotificationButtonVisibility);
 
-    if (!existingSubscription) {
-      const userData = getUserData();
-      if (userData && userData.token) {
-        await subscribeToPushNotifications(registration);
-      }
-    }
-  } catch (error) {
-    console.error("Gagal menginisialisasi push notification:", error);
-  }
+  setInterval(updateNotificationButtonVisibility, 1000);
 }
 
-async function subscribeToPushNotifications(registration) {
-  try {
-    const subscription = await subscribeUserToPush(registration);
-    const subscriptionData = {
-      endpoint: subscription.endpoint,
-      keys: {
-        p256dh: btoa(
-          String.fromCharCode.apply(
-            null,
-            new Uint8Array(subscription.getKey("p256dh"))
-          )
-        ),
-        auth: btoa(
-          String.fromCharCode.apply(
-            null,
-            new Uint8Array(subscription.getKey("auth"))
-          )
-        ),
-      },
-    };
+function updateNotificationButtonVisibility() {
+  const button = document.getElementById("notification-toggle-btn");
+  const userData = getUserData();
 
-    const response = await subscribeNotification(subscriptionData);
-    if (!response.error) {
-      console.log("Berhasil berlangganan push notification");
+  if (button) {
+    if (userData && userData.token) {
+      button.style.display = "block";
+    } else {
+      button.style.display = "none";
     }
-  } catch (error) {
-    console.error("Gagal berlangganan push notification:", error);
   }
 }
-
-export { subscribeToPushNotifications };
 
 export class FloatingButton {
   constructor(options = {}) {
