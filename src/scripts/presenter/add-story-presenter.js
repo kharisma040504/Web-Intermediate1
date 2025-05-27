@@ -1,4 +1,4 @@
-import { debugLog, showNotification, checkSubscriptionStatus } from "../utils";
+import { debugLog, showNotification } from "../utils";
 
 class AddStoryPresenter {
   constructor({ view, model }) {
@@ -34,32 +34,9 @@ class AddStoryPresenter {
       debugLog("Mengirim data cerita dengan valid data");
 
       const response = await this._model.addStory(formData);
-      
+
       if (!response.error) {
-        this._view.showSuccessMessage("Cerita berhasil ditambahkan");
-        
-        const isSubscribed = await checkSubscriptionStatus();
-        
-        if (isSubscribed && 'serviceWorker' in navigator) {
-          try {
-            const registration = await navigator.serviceWorker.ready;
-            await registration.showNotification('Story berhasil dibuat', {
-              body: `Anda telah membuat story baru dengan deskripsi: ${description}`,
-              icon: './favicon.png',
-              badge: './favicon.png',
-              tag: 'story-created',
-              requireInteraction: true,
-              data: {
-                url: '#/'
-              }
-            });
-          } catch (notifError) {
-            console.error('Gagal menampilkan notifikasi:', notifError);
-          }
-        } else if (!isSubscribed) {
-          console.log('User belum berlangganan notifikasi, tidak menampilkan notifikasi');
-        }
-        
+        await this._sendPushNotification(description);
         return true;
       } else {
         throw new Error(response.message || "Gagal menambahkan cerita");
@@ -68,10 +45,52 @@ class AddStoryPresenter {
       debugLog("Error adding story:", error);
       this._view.showErrorMessage(error.message);
       showNotification("Error", error.message, "error");
-
       return false;
     } finally {
       this._view.hideLoading();
+    }
+  }
+
+  async _sendPushNotification(description) {
+    try {
+      if ("serviceWorker" in navigator && "PushManager" in window) {
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.getSubscription();
+
+        if (subscription) {
+          const notificationData = {
+            title: "Story berhasil dibuat",
+            options: {
+              body: `Anda telah membuat story baru dengan deskripsi: ${description.substring(
+                0,
+                100
+              )}${description.length > 100 ? "..." : ""}`,
+              icon: "./favicon.png",
+              badge: "./favicon.png",
+              tag: "story-created",
+              requireInteraction: false,
+              silent: false,
+              data: {
+                url: "#/",
+              },
+            },
+          };
+
+          if (registration.active) {
+            registration.active.postMessage({
+              type: "SHOW_NOTIFICATION",
+              payload: notificationData,
+            });
+          }
+          debugLog("Push notification sent successfully");
+        } else {
+          debugLog("User not subscribed to push notifications");
+        }
+      } else {
+        debugLog("Push notifications not supported");
+      }
+    } catch (error) {
+      debugLog("Error sending push notification:", error);
     }
   }
 

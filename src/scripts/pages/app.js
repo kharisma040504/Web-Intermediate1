@@ -12,6 +12,9 @@ class App {
   #drawerButton = null;
   #navigationDrawer = null;
   #authMenu = null;
+  #drawerOverlay = null;
+  #header = null;
+  #footer = null;
   currentPage = null;
 
   constructor({ navigationDrawer, drawerButton, content, authMenu }) {
@@ -19,6 +22,9 @@ class App {
     this.#drawerButton = drawerButton;
     this.#navigationDrawer = navigationDrawer;
     this.#authMenu = authMenu;
+    this.#drawerOverlay = document.getElementById("drawer-overlay");
+    this.#header = document.querySelector("header .main-header");
+    this.#footer = document.querySelector("footer");
     this._checkBrowserCompatibility();
     this._setupDrawer();
     this._updateAuthMenu();
@@ -62,34 +68,104 @@ class App {
 
   _setupDrawer() {
     try {
-      this.#drawerButton.addEventListener("click", () => {
-        this.#navigationDrawer.classList.toggle("open");
+      this.#drawerButton.addEventListener("click", (e) => {
+        e.stopPropagation();
+        this._toggleDrawer();
       });
+
+      if (this.#drawerOverlay) {
+        this.#drawerOverlay.addEventListener("click", () => {
+          this._closeDrawer();
+        });
+      }
+
+      const brandName = document.querySelector(".brand-name");
+      if (brandName) {
+        brandName.addEventListener("click", (e) => {
+          if (this.#navigationDrawer.classList.contains("open")) {
+            e.preventDefault();
+            this._closeDrawer();
+          }
+        });
+      }
 
       document.body.addEventListener("click", (event) => {
         if (
           !this.#navigationDrawer.contains(event.target) &&
-          !this.#drawerButton.contains(event.target)
+          !this.#drawerButton.contains(event.target) &&
+          !event.target.closest(".header-left")
         ) {
-          this.#navigationDrawer.classList.remove("open");
+          this._closeDrawer();
         }
 
         this.#navigationDrawer.querySelectorAll("a").forEach((link) => {
           if (link.contains(event.target)) {
-            this.#navigationDrawer.classList.remove("open");
+            this._closeDrawer();
           }
         });
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (
+          e.key === "Escape" &&
+          this.#navigationDrawer.classList.contains("open")
+        ) {
+          this._closeDrawer();
+        }
       });
     } catch (error) {
       debugLog("Error setting up drawer:", error);
     }
   }
 
+  _toggleDrawer() {
+    const isOpen = this.#navigationDrawer.classList.contains("open");
+    if (isOpen) {
+      this._closeDrawer();
+    } else {
+      this._openDrawer();
+    }
+  }
+
+  _openDrawer() {
+    this.#navigationDrawer.classList.add("open");
+    if (this.#drawerOverlay) {
+      this.#drawerOverlay.classList.add("open");
+    }
+    if (this.#header) {
+      this.#header.classList.add("drawer-open");
+    }
+    if (this.#content) {
+      this.#content.classList.add("drawer-open");
+    }
+    if (this.#footer) {
+      this.#footer.classList.add("drawer-open");
+    }
+    document.body.style.overflow = "hidden";
+  }
+
+  _closeDrawer() {
+    this.#navigationDrawer.classList.remove("open");
+    if (this.#drawerOverlay) {
+      this.#drawerOverlay.classList.remove("open");
+    }
+    if (this.#header) {
+      this.#header.classList.remove("drawer-open");
+    }
+    if (this.#content) {
+      this.#content.classList.remove("drawer-open");
+    }
+    if (this.#footer) {
+      this.#footer.classList.remove("drawer-open");
+    }
+    document.body.style.overflow = "";
+  }
+
   _updateAuthMenu() {
     try {
       if (isUserLoggedIn()) {
         this.#authMenu.innerHTML = `
-          <a href="#" id="logout-button">Logout</a>
+          <a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> Logout</a>
         `;
 
         const logoutButton = document.getElementById("logout-button");
@@ -107,7 +183,8 @@ class App {
           });
         }
       } else {
-        this.#authMenu.innerHTML = '<a href="#/login">Login</a>';
+        this.#authMenu.innerHTML =
+          '<a href="#/login"><i class="fas fa-sign-in-alt"></i> Login</a>';
 
         const currentPath = window.location.hash.replace("#", "");
         const restrictedPaths = ["/", "/add", "/story"];
@@ -122,7 +199,8 @@ class App {
       }
     } catch (error) {
       console.error("Error updating auth menu:", error);
-      this.#authMenu.innerHTML = '<a href="#/login">Login</a>';
+      this.#authMenu.innerHTML =
+        '<a href="#/login"><i class="fas fa-sign-in-alt"></i> Login</a>';
     }
   }
 
@@ -159,7 +237,6 @@ class App {
       }
 
       this._updateAuthMenu();
-
       this._initSkipToContent();
     } catch (error) {
       debugLog("Error during page rendering:", error);
@@ -255,6 +332,7 @@ class App {
       }
     }
 
+    this._closeDrawer();
     console.log("App resources cleaned up");
   }
 }

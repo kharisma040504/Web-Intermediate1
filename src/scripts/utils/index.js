@@ -1,7 +1,8 @@
 import CONFIG from "../config";
 import { logger } from "./logger";
 
-const VAPID_PUBLIC_KEY = 'BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk';
+const VAPID_PUBLIC_KEY =
+  "BCCs2eonMI-6H2ctvFaWg-UYdDv387Vno_bzUzALpB442r2lCnsHmtrx8biyPi_E-1fSGABK_Qs_GlvPoJJqxbk";
 
 export function showFormattedDate(
   date,
@@ -393,10 +394,10 @@ export function getAuthorizationHeader() {
 }
 
 export function urlB64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding)
-    .replace(/\-/g, '+')
-    .replace(/_/g, '/');
+    .replace(/\-/g, "+")
+    .replace(/_/g, "/");
 
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
@@ -408,17 +409,17 @@ export function urlB64ToUint8Array(base64String) {
 }
 
 export async function requestNotificationPermission() {
-  if (!('Notification' in window)) {
-    throw new Error('Browser tidak mendukung notifikasi');
+  if (!("Notification" in window)) {
+    throw new Error("Browser tidak mendukung notifikasi");
   }
 
-  if (Notification.permission === 'granted') {
+  if (Notification.permission === "granted") {
     return true;
   }
 
-  if (Notification.permission !== 'denied') {
+  if (Notification.permission !== "denied") {
     const permission = await Notification.requestPermission();
-    return permission === 'granted';
+    return permission === "granted";
   }
 
   return false;
@@ -427,15 +428,17 @@ export async function requestNotificationPermission() {
 export async function subscribeUserToPush(registration) {
   const subscribeOptions = {
     userVisibleOnly: true,
-    applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY)
+    applicationServerKey: urlB64ToUint8Array(VAPID_PUBLIC_KEY),
   };
 
-  const pushSubscription = await registration.pushManager.subscribe(subscribeOptions);
+  const pushSubscription = await registration.pushManager.subscribe(
+    subscribeOptions
+  );
   return pushSubscription;
 }
 
 export async function checkSubscriptionStatus() {
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+  if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
     return false;
   }
 
@@ -444,31 +447,33 @@ export async function checkSubscriptionStatus() {
     const subscription = await registration.pushManager.getSubscription();
     return !!subscription;
   } catch (error) {
-    console.error('Error checking subscription status:', error);
+    console.error("Error checking subscription status:", error);
     return false;
   }
 }
 
 export function createNotificationButton() {
-  const existingButton = document.getElementById('notification-toggle-btn');
+  const existingButton = document.getElementById("notification-toggle-btn");
   if (existingButton) {
     existingButton.remove();
   }
 
-  const button = document.createElement('button');
-  button.id = 'notification-toggle-btn';
-  button.className = 'notification-toggle-btn';
-  button.setAttribute('aria-label', 'Toggle Push Notifications');
-  
+  const button = document.createElement("button");
+  button.id = "notification-toggle-btn";
+  button.className = "notification-toggle-btn";
+  button.setAttribute("aria-label", "Toggle Push Notifications");
+  button.innerHTML =
+    '<i class="fas fa-bell"></i><span>Aktifkan Notifikasi</span>';
+
   updateNotificationButtonState(button);
-  
-  button.addEventListener('click', handleNotificationToggle);
-  
-  const header = document.querySelector('header .main-header');
+
+  button.addEventListener("click", handleNotificationToggle);
+
+  const header = document.querySelector("header .main-header");
   if (header) {
     header.appendChild(button);
   }
-  
+
   return button;
 }
 
@@ -476,57 +481,63 @@ async function updateNotificationButtonState(button) {
   try {
     const isSubscribed = await checkSubscriptionStatus();
     const userData = getUserData();
-    
+
     if (!userData || !userData.token) {
-      button.style.display = 'none';
+      button.style.display = "none";
       return;
     }
-    
-    button.style.display = 'block';
-    
+
+    button.style.display = "flex";
+
     if (isSubscribed) {
-      button.innerHTML = '<i class="fas fa-bell-slash"></i> Matikan Notifikasi';
-      button.className = 'notification-toggle-btn subscribed';
-      button.title = 'Klik untuk mematikan notifikasi';
+      button.innerHTML =
+        '<i class="fas fa-bell-slash"></i><span>Matikan Notifikasi</span>';
+      button.className = "notification-toggle-btn subscribed";
+      button.title = "Klik untuk mematikan notifikasi";
     } else {
-      button.innerHTML = '<i class="fas fa-bell"></i> Aktifkan Notifikasi';
-      button.className = 'notification-toggle-btn unsubscribed';
-      button.title = 'Klik untuk mengaktifkan notifikasi';
+      button.innerHTML =
+        '<i class="fas fa-bell"></i><span>Aktifkan Notifikasi</span>';
+      button.className = "notification-toggle-btn unsubscribed";
+      button.title = "Klik untuk mengaktifkan notifikasi";
     }
   } catch (error) {
-    console.error('Error updating button state:', error);
+    console.error("Error updating button state:", error);
+    button.innerHTML =
+      '<i class="fas fa-bell"></i><span>Aktifkan Notifikasi</span>';
+    button.className = "notification-toggle-btn unsubscribed";
+    button.style.display = "flex";
   }
 }
 
 async function handleNotificationToggle(event) {
   event.preventDefault();
-  const button = event.target.closest('button');
-  
+  const button = event.target.closest("button");
+
   try {
     button.disabled = true;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
-    
+    button.innerHTML =
+      '<i class="fas fa-spinner fa-spin"></i><span>Loading...</span>';
+
     const isSubscribed = await checkSubscriptionStatus();
     const userData = getUserData();
-    
+
     if (!userData || !userData.token) {
-      showNotification('Error', 'Harap login terlebih dahulu', 'error');
+      showNotification("Error", "Harap login terlebih dahulu", "error");
       return;
     }
-    
+
     if (isSubscribed) {
       await unsubscribeFromNotifications();
-      showNotification('Berhasil', 'Notifikasi berhasil dimatikan', 'success');
+      showNotification("Berhasil", "Notifikasi berhasil dimatikan", "success");
     } else {
       await subscribeToNotifications();
-      showNotification('Berhasil', 'Notifikasi berhasil diaktifkan', 'success');
+      showNotification("Berhasil", "Notifikasi berhasil diaktifkan", "success");
     }
-    
+
     await updateNotificationButtonState(button);
-    
   } catch (error) {
-    console.error('Error toggling notification:', error);
-    showNotification('Error', error.message || 'Terjadi kesalahan', 'error');
+    console.error("Error toggling notification:", error);
+    showNotification("Error", error.message || "Terjadi kesalahan", "error");
     await updateNotificationButtonState(button);
   } finally {
     button.disabled = false;
@@ -536,40 +547,54 @@ async function handleNotificationToggle(event) {
 async function subscribeToNotifications() {
   const hasPermission = await requestNotificationPermission();
   if (!hasPermission) {
-    throw new Error('Izin notifikasi ditolak. Harap aktifkan di pengaturan browser.');
+    throw new Error(
+      "Izin notifikasi ditolak. Harap aktifkan di pengaturan browser."
+    );
   }
 
   const registration = await navigator.serviceWorker.ready;
   const subscription = await subscribeUserToPush(registration);
-  
+
   const subscriptionData = {
     endpoint: subscription.endpoint,
     keys: {
-      p256dh: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('p256dh')))),
-      auth: btoa(String.fromCharCode.apply(null, new Uint8Array(subscription.getKey('auth'))))
-    }
+      p256dh: btoa(
+        String.fromCharCode.apply(
+          null,
+          new Uint8Array(subscription.getKey("p256dh"))
+        )
+      ),
+      auth: btoa(
+        String.fromCharCode.apply(
+          null,
+          new Uint8Array(subscription.getKey("auth"))
+        )
+      ),
+    },
   };
 
-  const { subscribeNotification } = await import('../data/api');
+  const { subscribeNotification } = await import("../data/api");
   const response = await subscribeNotification(subscriptionData);
-  
+
   if (response.error) {
-    throw new Error(response.message || 'Gagal berlangganan notifikasi');
+    throw new Error(response.message || "Gagal berlangganan notifikasi");
   }
 }
 
 async function unsubscribeFromNotifications() {
   const registration = await navigator.serviceWorker.ready;
   const subscription = await registration.pushManager.getSubscription();
-  
+
   if (subscription) {
-    const { unsubscribeNotification } = await import('../data/api');
+    const { unsubscribeNotification } = await import("../data/api");
     const response = await unsubscribeNotification(subscription.endpoint);
-    
+
     if (response.error) {
-      throw new Error(response.message || 'Gagal berhenti berlangganan notifikasi');
+      throw new Error(
+        response.message || "Gagal berhenti berlangganan notifikasi"
+      );
     }
-    
+
     await subscription.unsubscribe();
   }
 }
