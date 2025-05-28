@@ -1,31 +1,31 @@
-import StoryModel from '../../data/story-model.js';
-import AddStoryPresenter from '../../presenter/add-story-presenter.js';
-import { 
-  showNotification, 
-  getUserData, 
-  loadMapScript, 
-  initCamera, 
-  captureImage, 
-  processImageFile, 
+import StoryModel from "../../data/story-model.js";
+import AddStoryPresenter from "../../presenter/add-story-presenter.js";
+import {
+  showNotification,
+  getUserData,
+  loadMapScript,
+  initCamera,
+  captureImage,
+  processImageFile,
   stopCamera,
-  debugLog  
-} from '../../utils';
+  debugLog,
+} from "../../utils";
 
 export default class AddStoryPage {
   constructor() {
     this._storyModel = new StoryModel();
     this._presenter = new AddStoryPresenter({
       view: this,
-      model: this._storyModel
+      model: this._storyModel,
     });
-    
+
     this._map = null;
     this._currentMarker = null;
     this._cameraStream = null;
     this._imageBlob = null;
     this._location = {
       lat: null,
-      lon: null
+      lon: null,
     };
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -124,441 +124,493 @@ export default class AddStoryPage {
 
   async afterRender() {
     try {
-      const form = document.getElementById('add-story-form');
-      const submitButton = document.getElementById('submit-button');
-      const cameraStartButton = document.getElementById('camera-start-button');
-      const cameraCaptureButton = document.getElementById('camera-capture-button');
-      const cameraResetButton = document.getElementById('camera-reset-button');
-      const cameraPreview = document.getElementById('camera-preview');
-      const cameraCanvas = document.getElementById('camera-canvas');
-      const photoPreview = document.getElementById('photo-preview');
-      const galleryButton = document.getElementById('gallery-button');
-      const galleryInput = document.getElementById('gallery-input');
-      const currentLocationButton = document.getElementById('current-location-button');
-      
+      const form = document.getElementById("add-story-form");
+      const submitButton = document.getElementById("submit-button");
+      const cameraStartButton = document.getElementById("camera-start-button");
+      const cameraCaptureButton = document.getElementById(
+        "camera-capture-button"
+      );
+      const cameraResetButton = document.getElementById("camera-reset-button");
+      const cameraPreview = document.getElementById("camera-preview");
+      const cameraCanvas = document.getElementById("camera-canvas");
+      const photoPreview = document.getElementById("photo-preview");
+      const galleryButton = document.getElementById("gallery-button");
+      const galleryInput = document.getElementById("gallery-input");
+      const currentLocationButton = document.getElementById(
+        "current-location-button"
+      );
+
       await this._presenter.initMap();
 
-      const existingNotification = document.querySelector('.notification-modal');
+      const existingNotification = document.querySelector(
+        ".notification-modal"
+      );
       if (existingNotification) {
         existingNotification.remove();
       }
-      
+
       if (cameraStartButton) {
-        cameraStartButton.addEventListener('click', this.startCamera);
+        cameraStartButton.addEventListener("click", this.startCamera);
       }
-      
+
       if (cameraCaptureButton) {
-        cameraCaptureButton.addEventListener('click', this.capturePhoto);
+        cameraCaptureButton.addEventListener("click", this.capturePhoto);
       }
 
       if (cameraResetButton) {
-        cameraResetButton.addEventListener('click', this.resetCamera);
+        cameraResetButton.addEventListener("click", this.resetCamera);
       }
 
       if (galleryButton && galleryInput) {
-        galleryButton.addEventListener('click', () => {
+        galleryButton.addEventListener("click", () => {
           this.resetCamera();
           galleryInput.click();
         });
-        
-        galleryInput.addEventListener('change', this.handleGalleryInput);
+
+        galleryInput.addEventListener("change", this.handleGalleryInput);
       }
-      
+
       if (currentLocationButton) {
-        currentLocationButton.addEventListener('click', this.getCurrentLocation);
+        currentLocationButton.addEventListener(
+          "click",
+          this.getCurrentLocation
+        );
       }
-      
+
       if (form) {
-        form.addEventListener('submit', this.handleSubmit);
+        form.addEventListener("submit", this.handleSubmit);
       }
     } catch (error) {
       this.showPageError(error);
     }
   }
-  
+
   async startCamera(event) {
     try {
-      const cameraStartButton = document.getElementById('camera-start-button');
-      const cameraPreview = document.getElementById('camera-preview');
-      const cameraCaptureButton = document.getElementById('camera-capture-button');
-      const cameraResetButton = document.getElementById('camera-reset-button');
-      const photoPreview = document.getElementById('photo-preview');
-      
+      const cameraStartButton = document.getElementById("camera-start-button");
+      const cameraPreview = document.getElementById("camera-preview");
+      const cameraCaptureButton = document.getElementById(
+        "camera-capture-button"
+      );
+      const cameraResetButton = document.getElementById("camera-reset-button");
+      const photoPreview = document.getElementById("photo-preview");
+
       cameraStartButton.disabled = true;
-      cameraPreview.style.display = 'block';
-      cameraCaptureButton.style.display = 'inline-block';
-      cameraResetButton.style.display = 'inline-block';
-      photoPreview.style.display = 'none';
-      
+      cameraPreview.style.display = "block";
+      cameraCaptureButton.style.display = "inline-block";
+      cameraResetButton.style.display = "inline-block";
+      photoPreview.style.display = "none";
+
       this._cameraStream = await initCamera(cameraPreview);
       cameraCaptureButton.disabled = false;
     } catch (error) {
-      showNotification('Error', error.message, 'error');
-      const cameraStartButton = document.getElementById('camera-start-button');
+      showNotification("Error", error.message, "error");
+      const cameraStartButton = document.getElementById("camera-start-button");
       if (cameraStartButton) {
         cameraStartButton.disabled = false;
       }
     }
   }
-  
+
   async capturePhoto(event) {
     try {
-      const cameraPreview = document.getElementById('camera-preview');
-      const cameraCanvas = document.getElementById('camera-canvas');
-      const photoPreview = document.getElementById('photo-preview');
-      const cameraCaptureButton = document.getElementById('camera-capture-button');
-      
+      const cameraPreview = document.getElementById("camera-preview");
+      const cameraCanvas = document.getElementById("camera-canvas");
+      const photoPreview = document.getElementById("photo-preview");
+      const cameraCaptureButton = document.getElementById(
+        "camera-capture-button"
+      );
+
       this._imageBlob = await captureImage(cameraPreview, cameraCanvas);
 
       const imageUrl = URL.createObjectURL(this._imageBlob);
       photoPreview.src = imageUrl;
-      photoPreview.style.display = 'block';
-      cameraPreview.style.display = 'none';
-      
+      photoPreview.style.display = "block";
+      cameraPreview.style.display = "none";
+
       if (this._cameraStream) {
         stopCamera(this._cameraStream);
         this._cameraStream = null;
       }
-      
-      cameraCaptureButton.style.display = 'none';
+
+      cameraCaptureButton.style.display = "none";
     } catch (error) {
-      showNotification('Error', error.message, 'error');
+      showNotification("Error", error.message, "error");
     }
   }
-  
+
   async handleGalleryInput(event) {
     try {
-      const photoPreview = document.getElementById('photo-preview');
-      const cameraPreview = document.getElementById('camera-preview');
-      const cameraCaptureButton = document.getElementById('camera-capture-button');
-      const cameraResetButton = document.getElementById('camera-reset-button');
-      const cameraStartButton = document.getElementById('camera-start-button');
-      
+      const photoPreview = document.getElementById("photo-preview");
+      const cameraPreview = document.getElementById("camera-preview");
+      const cameraCaptureButton = document.getElementById(
+        "camera-capture-button"
+      );
+      const cameraResetButton = document.getElementById("camera-reset-button");
+      const cameraStartButton = document.getElementById("camera-start-button");
+
       if (event.target.files && event.target.files[0]) {
         const file = event.target.files[0];
-        
+
         this._imageBlob = await processImageFile(file);
-        
+
         const imageUrl = URL.createObjectURL(this._imageBlob);
         photoPreview.src = imageUrl;
-        photoPreview.style.display = 'block';
-        cameraPreview.style.display = 'none';
-        cameraCaptureButton.style.display = 'none';
-        cameraResetButton.style.display = 'inline-block';
+        photoPreview.style.display = "block";
+        cameraPreview.style.display = "none";
+        cameraCaptureButton.style.display = "none";
+        cameraResetButton.style.display = "inline-block";
         cameraStartButton.disabled = true;
       }
     } catch (error) {
-      showNotification('Error', error.message, 'error');
+      showNotification("Error", error.message, "error");
     }
   }
-  
+
   async handleSubmit(event) {
     event.preventDefault();
-    
+
     if (this.isSubmitting) return;
     this.isSubmitting = true;
-    
+
     try {
-      const description = document.getElementById('description').value;
+      const description = document.getElementById("description").value;
       const photo = this._imageBlob;
-      const lat = document.getElementById('lat').value;
-      const lon = document.getElementById('lon').value;
-      
+      const lat = document.getElementById("lat").value;
+      const lon = document.getElementById("lon").value;
+
       const formData = new FormData();
-      
+
       if (description) {
-        formData.append('description', description);
+        formData.append("description", description);
       }
-      
+
       if (photo) {
-        const filename = 'photo.jpg';
-        const photoFile = new File([photo], filename, { type: 'image/jpeg' });
-        formData.append('photo', photoFile);
+        const filename = "photo.jpg";
+        const photoFile = new File([photo], filename, { type: "image/jpeg" });
+        formData.append("photo", photoFile);
       }
-      
+
       if (lat && lon) {
-        formData.append('lat', parseFloat(lat));
-        formData.append('lon', parseFloat(lon));
+        formData.append("lat", parseFloat(lat));
+        formData.append("lon", parseFloat(lon));
       }
-      
-      debugLog('Mengirim data cerita baru:', {
+
+      debugLog("Mengirim data cerita baru:", {
         description,
         photoSize: photo ? photo.size : 0,
-        hasLocation: !!(lat && lon)
+        hasLocation: !!(lat && lon),
       });
-      
+
       const success = await this._presenter.addStory(formData);
-      
+
       if (success) {
-        const form = document.getElementById('add-story-form');
-        const photoPreview = document.getElementById('photo-preview');
-        
+        const form = document.getElementById("add-story-form");
+        const photoPreview = document.getElementById("photo-preview");
+
         if (form) form.reset();
-        if (photoPreview) photoPreview.style.display = 'none';
-        
+        if (photoPreview) photoPreview.style.display = "none";
+
         this._imageBlob = null;
         this._presenter.resetMapMarker();
-        
+
         setTimeout(() => {
-          window.location.href = '#/';
+          window.location.href = "#/";
         }, 1500);
       }
     } catch (error) {
-      this.showErrorMessage(error.message || 'Gagal menambahkan cerita');
+      this.showErrorMessage(error.message || "Gagal menambahkan cerita");
     } finally {
       this.isSubmitting = false;
     }
   }
-  
+
   resetCamera() {
     if (this._cameraStream) {
       stopCamera(this._cameraStream);
       this._cameraStream = null;
     }
-    
+
     this._imageBlob = null;
-    
-    const photoPreview = document.getElementById('photo-preview');
-    const cameraPreview = document.getElementById('camera-preview');
-    const cameraCaptureButton = document.getElementById('camera-capture-button');
-    const cameraResetButton = document.getElementById('camera-reset-button');
-    const cameraStartButton = document.getElementById('camera-start-button');
-    
-    if (photoPreview) photoPreview.style.display = 'none';
-    if (cameraPreview) cameraPreview.style.display = 'none';
-    if (cameraCaptureButton) cameraCaptureButton.style.display = 'none';
-    if (cameraResetButton) cameraResetButton.style.display = 'none';
+
+    const photoPreview = document.getElementById("photo-preview");
+    const cameraPreview = document.getElementById("camera-preview");
+    const cameraCaptureButton = document.getElementById(
+      "camera-capture-button"
+    );
+    const cameraResetButton = document.getElementById("camera-reset-button");
+    const cameraStartButton = document.getElementById("camera-start-button");
+
+    if (photoPreview) photoPreview.style.display = "none";
+    if (cameraPreview) cameraPreview.style.display = "none";
+    if (cameraCaptureButton) cameraCaptureButton.style.display = "none";
+    if (cameraResetButton) cameraResetButton.style.display = "none";
     if (cameraStartButton) cameraStartButton.disabled = false;
   }
-  
+
   async initMap() {
     try {
       const L = await loadMapScript();
-      const mapContainer = document.getElementById('map-container');
-      
+      const mapContainer = document.getElementById("map-container");
+
       if (!mapContainer) {
-        throw new Error('Map container not found');
+        throw new Error("Map container not found");
       }
 
-      this._map = L.map('map-container').setView([-2.5489, 118.0149], 5);
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      if (!L) {
+        this.handleMapError(new Error("Map tidak tersedia dalam mode offline"));
+        return;
+      }
+
+      this._map = L.map("map-container").setView([-2.5489, 118.0149], 5);
+
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(this._map);
 
-      this._map.on('click', (event) => {
+      this._map.on("click", (event) => {
         this._presenter.updateMarker(event.latlng.lat, event.latlng.lng);
       });
     } catch (error) {
-      throw new Error(`Gagal memuat peta: ${error.message}`);
+      this.handleMapError(error);
     }
   }
-  
+
   updateMarker(lat, lng) {
     try {
       const formattedLat = parseFloat(lat).toFixed(6);
       const formattedLng = parseFloat(lng).toFixed(6);
-      
+
       this._location = {
         lat: formattedLat,
-        lon: formattedLng
+        lon: formattedLng,
       };
 
-      document.getElementById('lat').value = formattedLat;
-      document.getElementById('lon').value = formattedLng;
-      document.getElementById('coordinates-display').style.display = 'block';
-      document.getElementById('location-text').textContent = `Lokasi dipilih: ${formattedLat}, ${formattedLng}`;
+      document.getElementById("lat").value = formattedLat;
+      document.getElementById("lon").value = formattedLng;
+      document.getElementById("coordinates-display").style.display = "block";
+      document.getElementById(
+        "location-text"
+      ).textContent = `Lokasi dipilih: ${formattedLat}, ${formattedLng}`;
 
-      if (this._currentMarker) {
+      if (this._currentMarker && this._map) {
         this._map.removeLayer(this._currentMarker);
       }
 
-      const customIcon = L.icon({
-        iconUrl: 'https://cdn-icons-png.flaticon.com/512/684/684908.png',
-        iconSize: [32, 32],
-        iconAnchor: [16, 32],
-        popupAnchor: [0, -32]
-      });
+      if (this._map && window.L) {
+        const customIcon = window.L.icon({
+          iconUrl: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
+          iconSize: [32, 32],
+          iconAnchor: [16, 32],
+          popupAnchor: [0, -32],
+        });
 
-      this._currentMarker = L.marker([lat, lng], { icon: customIcon })
-        .addTo(this._map)
-        .bindPopup('Lokasi cerita')
-        .openPopup();
+        this._currentMarker = window.L.marker([lat, lng], { icon: customIcon })
+          .addTo(this._map)
+          .bindPopup("Lokasi cerita")
+          .openPopup();
+      }
     } catch (error) {
-      showNotification('Error', `Gagal memperbarui marker: ${error.message}`, 'error');
+      showNotification(
+        "Error",
+        `Gagal memperbarui marker: ${error.message}`,
+        "error"
+      );
     }
   }
-  
+
   resetMapMarker() {
     try {
       this._location = {
         lat: null,
-        lon: null
+        lon: null,
       };
-      
-      if (this._currentMarker) {
+
+      if (this._currentMarker && this._map) {
         this._map.removeLayer(this._currentMarker);
         this._currentMarker = null;
       }
-      
-      document.getElementById('lat').value = '';
-      document.getElementById('lon').value = '';
-      document.getElementById('coordinates-display').style.display = 'none';
-      
-      document.getElementById('location-text').textContent = 'Klik pada peta untuk memilih lokasi, atau gunakan lokasi saat ini.';
+
+      document.getElementById("lat").value = "";
+      document.getElementById("lon").value = "";
+      document.getElementById("coordinates-display").style.display = "none";
+
+      document.getElementById("location-text").textContent =
+        "Klik pada peta untuk memilih lokasi, atau gunakan lokasi saat ini.";
     } catch (error) {
-      console.error('Error resetting map marker:', error);
+      console.error("Error resetting map marker:", error);
     }
   }
-  
+
   getCurrentLocation() {
     try {
       if (!navigator.geolocation) {
-        throw new Error('Geolocation tidak didukung oleh browser Anda');
+        throw new Error("Geolocation tidak didukung oleh browser Anda");
       }
-      
-      const locationButton = document.getElementById('current-location-button');
+
+      const locationButton = document.getElementById("current-location-button");
       const originalButtonText = locationButton.textContent;
-      locationButton.textContent = 'Mendapatkan Lokasi...';
+      locationButton.textContent = "Mendapatkan Lokasi...";
       locationButton.disabled = true;
-      
+
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          
+
           this.updateMarker(latitude, longitude);
-          this._map.setView([latitude, longitude], 15);
-        
+          if (this._map) {
+            this._map.setView([latitude, longitude], 15);
+          }
+
           locationButton.textContent = originalButtonText;
           locationButton.disabled = false;
         },
         (error) => {
-          let errorMessage = 'Gagal mendapatkan lokasi: ';
-          
+          let errorMessage = "Gagal mendapatkan lokasi: ";
+
           switch (error.code) {
             case error.PERMISSION_DENIED:
-              errorMessage += 'Izin lokasi ditolak.';
+              errorMessage += "Izin lokasi ditolak.";
               break;
             case error.POSITION_UNAVAILABLE:
-              errorMessage += 'Informasi lokasi tidak tersedia.';
+              errorMessage += "Informasi lokasi tidak tersedia.";
               break;
             case error.TIMEOUT:
-              errorMessage += 'Waktu permintaan lokasi habis.';
+              errorMessage += "Waktu permintaan lokasi habis.";
               break;
             default:
-              errorMessage += 'Kesalahan tidak diketahui.';
+              errorMessage += "Kesalahan tidak diketahui.";
           }
-          
-          showNotification('Error', errorMessage, 'error');
-          
+
+          showNotification("Error", errorMessage, "error");
+
           locationButton.textContent = originalButtonText;
           locationButton.disabled = false;
         },
         {
           enableHighAccuracy: true,
           timeout: 10000,
-          maximumAge: 0
+          maximumAge: 0,
         }
       );
     } catch (error) {
-      showNotification('Error', error.message, 'error');
+      showNotification("Error", error.message, "error");
     }
   }
-  
+
   showLoading() {
-    const submitButton = document.getElementById('submit-button');
+    const submitButton = document.getElementById("submit-button");
     submitButton._originalText = submitButton.textContent;
-    submitButton.textContent = 'Mengirim...';
+    submitButton.textContent = "Mengirim...";
     submitButton.disabled = true;
-    
-    const alertDiv = document.getElementById('add-story-alert');
+
+    const alertDiv = document.getElementById("add-story-alert");
     if (alertDiv) {
-      alertDiv.className = 'alert alert-info';
-      alertDiv.textContent = 'Sedang mengirim cerita...';
-      alertDiv.style.display = 'block';
+      alertDiv.className = "alert alert-info";
+      alertDiv.textContent = "Sedang mengirim cerita...";
+      alertDiv.style.display = "block";
     }
   }
-  
+
   hideLoading() {
-    const submitButton = document.getElementById('submit-button');
-    
+    const submitButton = document.getElementById("submit-button");
+
     if (submitButton && submitButton._originalText) {
       submitButton.textContent = submitButton._originalText;
       submitButton.disabled = false;
     }
   }
-  
+
   showSuccessMessage(message) {
-    const alertDiv = document.getElementById('add-story-alert');
+    const alertDiv = document.getElementById("add-story-alert");
     if (alertDiv) {
-      alertDiv.className = 'alert alert-success';
+      alertDiv.className = "alert alert-success";
       alertDiv.textContent = message;
-      alertDiv.style.display = 'block';
+      alertDiv.style.display = "block";
     }
-    
-    showNotification('Berhasil', message, 'success');
+
+    showNotification("Berhasil", message, "success");
   }
-  
+
   showErrorMessage(message) {
-    const alertDiv = document.getElementById('add-story-alert');
+    const alertDiv = document.getElementById("add-story-alert");
     if (alertDiv) {
-      alertDiv.className = 'alert alert-error';
+      alertDiv.className = "alert alert-error";
       alertDiv.textContent = message;
-      alertDiv.style.display = 'block';
+      alertDiv.style.display = "block";
     }
-    
-    showNotification('Error', message, 'error');
+
+    showNotification("Error", message, "error");
   }
-  
+
   showPageError(error) {
-    const container = document.querySelector('.container');
+    const container = document.querySelector(".container");
     if (container) {
       container.innerHTML = `
         <div class="alert alert-error">
           <p>Terjadi kesalahan saat memuat halaman tambah cerita.</p>
-          <p>${error.message || 'Kesalahan tidak diketahui'}</p>
+          <p>${error.message || "Kesalahan tidak diketahui"}</p>
           <p><a href="#/">Kembali ke beranda</a></p>
         </div>
       `;
     }
   }
-  
+
   handleMapError(error) {
-    showNotification('Error', `Gagal memuat peta: ${error.message}`, 'error');
+    console.log("Map error handled gracefully:", error.message);
+    const mapContainer = document.getElementById("map-container");
+    if (mapContainer) {
+      mapContainer.innerHTML = `
+        <div class="alert alert-info" style="padding: 20px; text-align: center; background: #f0f8ff; border: 1px solid #add8e6; border-radius: 5px;">
+          <i class="fas fa-info-circle"></i>
+          <p><strong>Mode Offline</strong></p>
+          <p>Peta tidak tersedia saat offline. Anda masih dapat menambahkan cerita tanpa lokasi.</p>
+          <p><small>Koordinat akan disimpan jika Anda menggunakan geolocation.</small></p>
+        </div>
+      `;
+    }
   }
-  
+
   cleanup() {
     try {
-      const form = document.getElementById('add-story-form');
+      const form = document.getElementById("add-story-form");
       if (form) {
-        form.removeEventListener('submit', this.handleSubmit);
+        form.removeEventListener("submit", this.handleSubmit);
       }
-      
-      const cameraStartButton = document.getElementById('camera-start-button');
+
+      const cameraStartButton = document.getElementById("camera-start-button");
       if (cameraStartButton) {
-        cameraStartButton.removeEventListener('click', this.startCamera);
+        cameraStartButton.removeEventListener("click", this.startCamera);
       }
-      
-      const cameraCaptureButton = document.getElementById('camera-capture-button');
+
+      const cameraCaptureButton = document.getElementById(
+        "camera-capture-button"
+      );
       if (cameraCaptureButton) {
-        cameraCaptureButton.removeEventListener('click', this.capturePhoto);
+        cameraCaptureButton.removeEventListener("click", this.capturePhoto);
       }
-      
-      const cameraResetButton = document.getElementById('camera-reset-button');
+
+      const cameraResetButton = document.getElementById("camera-reset-button");
       if (cameraResetButton) {
-        cameraResetButton.removeEventListener('click', this.resetCamera);
+        cameraResetButton.removeEventListener("click", this.resetCamera);
       }
-      
-      const galleryInput = document.getElementById('gallery-input');
+
+      const galleryInput = document.getElementById("gallery-input");
       if (galleryInput) {
-        galleryInput.removeEventListener('change', this.handleGalleryInput);
+        galleryInput.removeEventListener("change", this.handleGalleryInput);
       }
-      
-      const currentLocationButton = document.getElementById('current-location-button');
+
+      const currentLocationButton = document.getElementById(
+        "current-location-button"
+      );
       if (currentLocationButton) {
-        currentLocationButton.removeEventListener('click', this.getCurrentLocation);
+        currentLocationButton.removeEventListener(
+          "click",
+          this.getCurrentLocation
+        );
       }
-      
+
       if (this._cameraStream) {
         stopCamera(this._cameraStream);
         this._cameraStream = null;
@@ -569,14 +621,16 @@ export default class AddStoryPage {
         this._map = null;
       }
 
-      const existingNotification = document.querySelector('.notification-modal');
+      const existingNotification = document.querySelector(
+        ".notification-modal"
+      );
       if (existingNotification) {
         existingNotification.remove();
       }
-      
+
       console.log("AddStoryPage resources cleaned up");
     } catch (error) {
-      console.error('Error during cleanup:', error);
+      console.error("Error during cleanup:", error);
     }
   }
 }

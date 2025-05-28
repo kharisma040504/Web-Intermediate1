@@ -84,6 +84,12 @@ export function loadMapScript() {
       return;
     }
 
+    if (!navigator.onLine) {
+      debugLog("Offline mode: Map unavailable");
+      resolve(null);
+      return;
+    }
+
     fetch("https://unpkg.com/leaflet@1.9.4/dist/leaflet.css", {
       method: "HEAD",
       mode: "no-cors",
@@ -105,22 +111,14 @@ export function loadMapScript() {
 
         script.onerror = (error) => {
           debugLog("Failed to load Leaflet script:", error);
-          reject(
-            new Error(
-              "Failed to load map library. Please check your internet connection."
-            )
-          );
+          resolve(null);
         };
 
         document.head.appendChild(script);
       })
       .catch((error) => {
         debugLog("Failed to fetch Leaflet CSS:", error);
-        reject(
-          new Error(
-            "Failed to load map resources. Please check your internet connection."
-          )
-        );
+        resolve(null);
       });
   });
 }
@@ -512,6 +510,15 @@ async function updateNotificationButtonState(button) {
 async function handleNotificationToggle(event) {
   event.preventDefault();
   const button = event.target.closest("button");
+
+  if (!navigator.onLine) {
+    showNotification(
+      "Offline",
+      "Notifikasi memerlukan koneksi internet",
+      "error"
+    );
+    return;
+  }
 
   try {
     button.disabled = true;

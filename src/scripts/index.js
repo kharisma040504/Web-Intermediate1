@@ -1,8 +1,10 @@
 import "../styles/styles.css";
 import App from "./pages/app";
 import { getUserData, createNotificationButton } from "./utils";
+import { initOfflineManager } from "./utils/offline-utils";
 
 let appInstance = null;
+let offlineManager = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   if (!document.startViewTransition) {
@@ -61,7 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if ("serviceWorker" in navigator) {
     try {
       const registration = await navigator.serviceWorker.register(
-        "/service-worker.js",
+        "/service-worker-enhanced.js",
         {
           scope: "/",
           updateViaCache: "none",
@@ -69,7 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       );
 
       console.log(
-        "Service worker registered successfully with scope:",
+        "Enhanced service worker registered successfully with scope:",
         registration.scope
       );
 
@@ -85,6 +87,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       console.error("Service worker registration failed:", error);
     }
   }
+
+  offlineManager = initOfflineManager();
+  window.offlineManager = offlineManager;
+  console.log("✅ Offline Manager initialized");
 
   window.addEventListener("beforeunload", () => {
     if (appInstance) {

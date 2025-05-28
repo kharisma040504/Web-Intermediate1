@@ -28,7 +28,6 @@ class App {
     this._checkBrowserCompatibility();
     this._setupDrawer();
     this._updateAuthMenu();
-    this._registerServiceWorker();
     this._initSkipToContent();
   }
 
@@ -299,26 +298,6 @@ class App {
     } catch (error) {
       debugLog("Error in _renderContent:", error);
       throw error;
-    }
-  }
-
-  _registerServiceWorker() {
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/service-worker.js")
-          .then((registration) => {
-            console.log(
-              "Service Worker berhasil didaftarkan:",
-              registration.scope
-            );
-          })
-          .catch((error) => {
-            console.error("Pendaftaran Service Worker gagal:", error);
-          });
-      });
-    } else {
-      console.log("Browser tidak mendukung Service Worker");
     }
   }
 

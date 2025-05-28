@@ -36,7 +36,16 @@ class AddStoryPresenter {
       const response = await this._model.addStory(formData);
 
       if (!response.error) {
-        await this._sendPushNotification(description);
+        if (response.offline) {
+          showNotification(
+            "Offline",
+            "Story disimpan offline, akan dikirim saat online",
+            "info"
+          );
+        } else {
+          showNotification("Berhasil", "Story berhasil ditambahkan", "success");
+          await this._sendPushNotification(description);
+        }
         return true;
       } else {
         throw new Error(response.message || "Gagal menambahkan cerita");
@@ -44,7 +53,6 @@ class AddStoryPresenter {
     } catch (error) {
       debugLog("Error adding story:", error);
       this._view.showErrorMessage(error.message);
-      showNotification("Error", error.message, "error");
       return false;
     } finally {
       this._view.hideLoading();
