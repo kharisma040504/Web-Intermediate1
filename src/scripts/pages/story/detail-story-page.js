@@ -158,7 +158,7 @@ export default class DetailStoryPage {
                 ${this._isBookmarked ? "Hapus Bookmark" : "Tambah Bookmark"}
               </button>
               
-              <a href="#bookmarks" class="btn btn-outline">
+              <a href="#/bookmarks" class="btn btn-outline">
                 <i class="fas fa-bookmark"></i> Lihat Bookmark
               </a>
             </div>

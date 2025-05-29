@@ -73,7 +73,6 @@ export default class AboutPage {
               <li>Desain responsif untuk desktop dan mobile</li>
               <li>Loading states untuk feedback visual</li>
               <li>Notifikasi untuk aksi pengguna</li>
-              <li>Navigasi yang intuitif</li>
               <li>Aksesibilitas keyboard dan screen reader</li>
               <li>Transisi halaman yang smooth</li>
               <li>Offline capability dengan fallback data</li>
