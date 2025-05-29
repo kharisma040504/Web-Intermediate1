@@ -33,7 +33,7 @@ jobs:
       - name: Build project
         run: npm run build
         env:
-          GITHUB_PAGES: true # ✅ Set environment variable
+          GITHUB_PAGES: true
 
       - name: Setup Pages
         uses: actions/configure-pages@v4
