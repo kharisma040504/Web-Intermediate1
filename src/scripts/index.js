@@ -63,9 +63,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   if ("serviceWorker" in navigator) {
     try {
       const registration = await navigator.serviceWorker.register(
-        "/service-worker-enhanced.js",
+        "./service-worker-enhanced.js",
         {
-          scope: "/",
+          scope: "./",
           updateViaCache: "none",
         }
       );
