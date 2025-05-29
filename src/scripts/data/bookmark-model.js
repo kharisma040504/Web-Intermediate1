@@ -27,18 +27,15 @@ class BookmarkModel {
 
       request.onupgradeneeded = (event) => {
         const db = event.target.result;
-        
-        // Hapus store lama jika ada
+
         if (db.objectStoreNames.contains(this.STORE_NAME)) {
           db.deleteObjectStore(this.STORE_NAME);
         }
 
-        // Buat store baru
         const store = db.createObjectStore(this.STORE_NAME, {
-          keyPath: "id"
+          keyPath: "id",
         });
 
-        // Buat index untuk pencarian
         store.createIndex("name", "name", { unique: false });
         store.createIndex("createdAt", "createdAt", { unique: false });
         store.createIndex("bookmarkedAt", "bookmarkedAt", { unique: false });
@@ -60,7 +57,7 @@ class BookmarkModel {
         createdAt: story.createdAt,
         lat: story.lat,
         lon: story.lon,
-        bookmarkedAt: new Date().toISOString()
+        bookmarkedAt: new Date().toISOString(),
       };
 
       return new Promise((resolve, reject) => {
@@ -72,7 +69,7 @@ class BookmarkModel {
           debugLog("Story bookmarked successfully:", story.id);
           resolve({
             error: false,
-            message: "Story berhasil ditambahkan ke bookmark"
+            message: "Story berhasil ditambahkan ke bookmark",
           });
         };
 
@@ -80,7 +77,7 @@ class BookmarkModel {
           debugLog("Error adding bookmark:", request.error);
           reject({
             error: true,
-            message: "Gagal menambahkan bookmark"
+            message: "Gagal menambahkan bookmark",
           });
         };
       });
@@ -88,7 +85,7 @@ class BookmarkModel {
       debugLog("Error in addBookmark:", error);
       return {
         error: true,
-        message: "Terjadi kesalahan saat menambahkan bookmark"
+        message: "Terjadi kesalahan saat menambahkan bookmark",
       };
     }
   }
@@ -104,14 +101,15 @@ class BookmarkModel {
 
         request.onsuccess = () => {
           const bookmarks = request.result;
-          // Urutkan berdasarkan waktu bookmark (terbaru dulu)
-          bookmarks.sort((a, b) => new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt));
-          
+          bookmarks.sort(
+            (a, b) => new Date(b.bookmarkedAt) - new Date(a.bookmarkedAt)
+          );
+
           debugLog("Retrieved bookmarks:", bookmarks.length);
           resolve({
             error: false,
             message: "success",
-            listStory: bookmarks
+            listStory: bookmarks,
           });
         };
 
@@ -119,7 +117,7 @@ class BookmarkModel {
           debugLog("Error getting bookmarks:", request.error);
           reject({
             error: true,
-            message: "Gagal mengambil data bookmark"
+            message: "Gagal mengambil data bookmark",
           });
         };
       });
@@ -128,7 +126,7 @@ class BookmarkModel {
       return {
         error: true,
         message: "Terjadi kesalahan saat mengambil bookmark",
-        listStory: []
+        listStory: [],
       };
     }
   }
@@ -146,7 +144,7 @@ class BookmarkModel {
           debugLog("Bookmark deleted successfully:", storyId);
           resolve({
             error: false,
-            message: "Bookmark berhasil dihapus"
+            message: "Bookmark berhasil dihapus",
           });
         };
 
@@ -154,7 +152,7 @@ class BookmarkModel {
           debugLog("Error deleting bookmark:", request.error);
           reject({
             error: true,
-            message: "Gagal menghapus bookmark"
+            message: "Gagal menghapus bookmark",
           });
         };
       });
@@ -162,7 +160,7 @@ class BookmarkModel {
       debugLog("Error in deleteBookmark:", error);
       return {
         error: true,
-        message: "Terjadi kesalahan saat menghapus bookmark"
+        message: "Terjadi kesalahan saat menghapus bookmark",
       };
     }
   }
