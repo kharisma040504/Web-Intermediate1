@@ -1,3 +1,5 @@
+link url: "https://kharisma040504.github.io/Web-Intermediate1/"
+
 Nama: Kharisma Maulida Saara
 Email: kharismamlda04@gmail.com
 ID Dicoding: FC331D5X2383
