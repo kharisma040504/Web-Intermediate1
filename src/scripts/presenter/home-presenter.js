@@ -1,4 +1,3 @@
-// src/scripts/presenter/home-presenter.js
 import { debugLog } from '../utils';
 
 class HomePresenter {

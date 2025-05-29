@@ -39,7 +39,6 @@ export class OfflineManager {
 
     document.body.appendChild(notification);
 
-    // Auto hide after 5 seconds
     setTimeout(() => {
       if (notification.parentElement) {
         notification.remove();

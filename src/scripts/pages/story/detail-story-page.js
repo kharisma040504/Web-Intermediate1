@@ -1,5 +1,7 @@
 import StoryModel from "../../data/story-model.js";
+import BookmarkModel from "../../data/bookmark-model.js";
 import DetailStoryPresenter from "../../presenter/detail-story-presenter.js";
+import BookmarkPresenter from "../../presenter/bookmark-presenter.js";
 import { parseActivePathname } from "../../routes/url-parser";
 import {
   showFormattedDate,
@@ -11,6 +13,7 @@ import {
 export default class DetailStoryPage {
   constructor() {
     this._storyModel = new StoryModel();
+    this._bookmarkModel = new BookmarkModel();
     const { id } = parseActivePathname();
 
     this._presenter = new DetailStoryPresenter({
@@ -19,9 +22,15 @@ export default class DetailStoryPage {
       storyId: id,
     });
 
+    this._bookmarkPresenter = new BookmarkPresenter({
+      view: this,
+      model: this._bookmarkModel,
+    });
+
     this._map = null;
     this._mapError = false;
     this._story = null;
+    this._isBookmarked = false;
   }
 
   async render() {
@@ -60,20 +69,41 @@ export default class DetailStoryPage {
     debugLog("Loading hidden");
   }
 
-  renderStoryDetail(story) {
+  async renderStoryDetail(story) {
     this._story = story;
+    this._isBookmarked = await this._bookmarkPresenter.isBookmarked(story.id);
+
     const container = document.getElementById("story-detail-container");
     if (!container) return;
 
     try {
       container.innerHTML = `
         <div class="story-detail">
-          <img 
-            src="${story.photoUrl}" 
-            alt="Cerita dari ${story.name}" 
-            class="story-detail-image"
-            onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';"
-          >
+          <div class="story-detail-header">
+            <img 
+              src="${story.photoUrl}" 
+              alt="Cerita dari ${story.name}" 
+              class="story-detail-image"
+              onerror="this.onerror=null; this.src='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';"
+            >
+            
+            <div class="story-detail-overlay">
+              <button 
+                id="bookmark-toggle-btn" 
+                class="btn btn-icon bookmark-btn ${
+                  this._isBookmarked ? "bookmarked" : ""
+                }"
+                title="${
+                  this._isBookmarked
+                    ? "Hapus dari bookmark"
+                    : "Tambah ke bookmark"
+                }"
+              >
+                <i class="fas fa-bookmark"></i>
+              </button>
+            </div>
+          </div>
+          
           <div class="story-detail-content">
             <h1 class="story-detail-title">Cerita dari ${story.name}</h1>
             
@@ -113,18 +143,165 @@ export default class DetailStoryPage {
                 : ""
             }
             
-            <div style="margin-top: 20px;">
+            <div class="story-detail-actions">
               <a href="#/" class="btn btn-primary">
                 <i class="fas fa-arrow-left"></i> Kembali ke Beranda
+              </a>
+              
+              <button 
+                id="bookmark-text-btn" 
+                class="btn ${
+                  this._isBookmarked ? "btn-secondary" : "btn-outline"
+                }"
+              >
+                <i class="fas fa-bookmark"></i>
+                ${this._isBookmarked ? "Hapus Bookmark" : "Tambah Bookmark"}
+              </button>
+              
+              <a href="#/bookmarks" class="btn btn-outline">
+                <i class="fas fa-bookmark"></i> Lihat Bookmark
               </a>
             </div>
           </div>
         </div>
       `;
+
+      this._attachBookmarkEventListeners();
     } catch (error) {
       debugLog("Error rendering story detail:", error);
       this.showErrorMessage(error.message);
     }
+  }
+
+  _attachBookmarkEventListeners() {
+    const bookmarkToggleBtn = document.getElementById("bookmark-toggle-btn");
+    const bookmarkTextBtn = document.getElementById("bookmark-text-btn");
+
+    if (bookmarkToggleBtn) {
+      bookmarkToggleBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await this._handleBookmarkToggle();
+      });
+    }
+
+    if (bookmarkTextBtn) {
+      bookmarkTextBtn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        await this._handleBookmarkToggle();
+      });
+    }
+  }
+
+  async _handleBookmarkToggle() {
+    if (!this._story) {
+      this._showNotification("Data cerita tidak tersedia", "error");
+      return;
+    }
+
+    try {
+      this._setBookmarkButtonsLoading(true);
+
+      let result;
+      if (this._isBookmarked) {
+        result = await this._bookmarkPresenter.removeBookmark(this._story.id);
+
+        if (!result.error) {
+          this._isBookmarked = false;
+          this._updateBookmarkButtons();
+          this._showNotification("Cerita dihapus dari bookmark", "success");
+        }
+      } else {
+        result = await this._bookmarkPresenter.addBookmark(this._story);
+
+        if (!result.error) {
+          this._isBookmarked = true;
+          this._updateBookmarkButtons();
+          this._showNotification("Cerita ditambahkan ke bookmark", "success");
+        }
+      }
+
+      if (result.error) {
+        this._showNotification(result.message || "Terjadi kesalahan", "error");
+      }
+    } catch (error) {
+      debugLog("Error toggling bookmark:", error);
+      this._showNotification(
+        "Terjadi kesalahan saat mengubah bookmark",
+        "error"
+      );
+    } finally {
+      this._setBookmarkButtonsLoading(false);
+    }
+  }
+
+  _setBookmarkButtonsLoading(isLoading) {
+    const bookmarkToggleBtn = document.getElementById("bookmark-toggle-btn");
+    const bookmarkTextBtn = document.getElementById("bookmark-text-btn");
+
+    if (bookmarkToggleBtn) {
+      bookmarkToggleBtn.disabled = isLoading;
+      if (isLoading) {
+        bookmarkToggleBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+      } else {
+        bookmarkToggleBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
+      }
+    }
+
+    if (bookmarkTextBtn) {
+      bookmarkTextBtn.disabled = isLoading;
+      if (isLoading) {
+        bookmarkTextBtn.innerHTML =
+          '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+      }
+    }
+  }
+
+  _updateBookmarkButtons() {
+    const bookmarkToggleBtn = document.getElementById("bookmark-toggle-btn");
+    const bookmarkTextBtn = document.getElementById("bookmark-text-btn");
+
+    if (bookmarkToggleBtn) {
+      bookmarkToggleBtn.className = `btn btn-icon bookmark-btn ${
+        this._isBookmarked ? "bookmarked" : ""
+      }`;
+      bookmarkToggleBtn.title = this._isBookmarked
+        ? "Hapus dari bookmark"
+        : "Tambah ke bookmark";
+      bookmarkToggleBtn.innerHTML = '<i class="fas fa-bookmark"></i>';
+    }
+
+    if (bookmarkTextBtn) {
+      bookmarkTextBtn.className = `btn ${
+        this._isBookmarked ? "btn-secondary" : "btn-outline"
+      }`;
+      bookmarkTextBtn.innerHTML = `
+        <i class="fas fa-bookmark"></i>
+        ${this._isBookmarked ? "Hapus Bookmark" : "Tambah Bookmark"}
+      `;
+    }
+  }
+
+  _showNotification(message, type = "info") {
+    const notification = document.createElement("div");
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+      <div class="notification-content">
+        <i class="fas fa-${
+          type === "success"
+            ? "check-circle"
+            : type === "error"
+            ? "exclamation-circle"
+            : "info-circle"
+        }"></i>
+        <span>${message}</span>
+      </div>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.remove();
+    }, 3000);
   }
 
   showErrorMessage(message) {

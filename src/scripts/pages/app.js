@@ -162,10 +162,16 @@ class App {
 
   _updateAuthMenu() {
     try {
+      const bookmarkMenu = document.getElementById("bookmark-menu");
+
       if (isUserLoggedIn()) {
         this.#authMenu.innerHTML = `
           <a href="#" id="logout-button"><i class="fas fa-sign-out-alt"></i> Logout</a>
         `;
+
+        if (bookmarkMenu) {
+          bookmarkMenu.style.display = "list-item";
+        }
 
         const logoutButton = document.getElementById("logout-button");
         if (logoutButton) {
@@ -185,8 +191,12 @@ class App {
         this.#authMenu.innerHTML =
           '<a href="#/login"><i class="fas fa-sign-in-alt"></i> Login</a>';
 
+        if (bookmarkMenu) {
+          bookmarkMenu.style.display = "none";
+        }
+
         const currentPath = window.location.hash.replace("#", "");
-        const restrictedPaths = ["/", "/add", "/story"];
+        const restrictedPaths = ["/", "/add", "/story", "/bookmarks"];
 
         const isRestricted = restrictedPaths.some(
           (path) => currentPath === path || currentPath.startsWith(path + "/")
@@ -200,6 +210,11 @@ class App {
       console.error("Error updating auth menu:", error);
       this.#authMenu.innerHTML =
         '<a href="#/login"><i class="fas fa-sign-in-alt"></i> Login</a>';
+
+      const bookmarkMenu = document.getElementById("bookmark-menu");
+      if (bookmarkMenu) {
+        bookmarkMenu.style.display = "none";
+      }
     }
   }
 
@@ -253,17 +268,20 @@ class App {
   async _renderContent() {
     try {
       const url = getActiveRoute();
-      const PageClass = routes[url];
+      let PageClass = routes[url];
 
       if (!PageClass) {
-        this.#content.innerHTML = `
-          <div id="content" class="container" tabindex="-1">
-            <h2 class="page-title">Halaman Tidak Ditemukan</h2>
-            <p>Halaman yang Anda cari tidak tersedia.</p>
-            <p><a href="#/">Kembali ke beranda</a></p>
-          </div>
-        `;
-        return;
+        PageClass = routes["/404"];
+        if (!PageClass) {
+          this.#content.innerHTML = `
+            <div id="content" class="container" tabindex="-1">
+              <h2 class="page-title">Halaman Tidak Ditemukan</h2>
+              <p>Halaman yang Anda cari tidak tersedia.</p>
+              <p><a href="#/">Kembali ke beranda</a></p>
+            </div>
+          `;
+          return;
+        }
       }
 
       this.#content.innerHTML = `
