@@ -7,6 +7,7 @@ if (workbox) {
 
   workbox.core.skipWaiting();
   workbox.core.clientsClaim();
+  
   workbox.precaching.precacheAndRoute([
     { url: "/", revision: "1" },
     { url: "/index.html", revision: "1" },
@@ -108,6 +109,13 @@ if (workbox) {
   );
 
   workbox.routing.registerRoute(
+    /\.(?:css|js)$/,
+    new workbox.strategies.StaleWhileRevalidate({
+      cacheName: "static-resources",
+    })
+  );
+
+  workbox.routing.registerRoute(
     ({ request }) => request.mode === "navigate",
     new workbox.strategies.NetworkFirst({
       cacheName: "pages-cache",
@@ -175,4 +183,12 @@ self.addEventListener("notificationclick", (event) => {
         }
       })
   );
+});
+
+self.addEventListener('install', (event) => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(clients.claim());
 });

@@ -9,21 +9,21 @@ class DetailStoryPresenter {
   async loadStoryDetail() {
     try {
       this._view.showLoading();
-      
+
       const response = await this._model.getStoryDetail(this._storyId);
       this._story = response.story;
-      
+
       if (!this._story) {
-        throw new Error('Cerita tidak ditemukan');
+        throw new Error("Cerita tidak ditemukan");
       }
-      
-      this._view.renderStoryDetail(this._story);
-      
+
+      await this._view.renderStoryDetail(this._story);
+
       if (this._story.lat && this._story.lon) {
-        this.initMap();
+        await this.initMap();
       }
     } catch (error) {
-      console.error('Error loading story detail:', error);
+      console.error("Error loading story detail:", error);
       this._view.showErrorMessage(error.message);
     } finally {
       this._view.hideLoading();
@@ -32,11 +32,13 @@ class DetailStoryPresenter {
 
   async initMap() {
     if (!this._story.lat || !this._story.lon) return;
-    
+
     try {
+      await new Promise((resolve) => setTimeout(resolve, 100));
+
       await this._view.initMap(this._story.lat, this._story.lon, this._story);
     } catch (error) {
-      console.error('Map initialization error:', error);
+      console.error("Map initialization error:", error);
       this._view.handleMapError(error);
     }
   }

@@ -158,7 +158,7 @@ export default class DetailStoryPage {
                 ${this._isBookmarked ? "Hapus Bookmark" : "Tambah Bookmark"}
               </button>
               
-              <a href="#/bookmarks" class="btn btn-outline">
+              <a href="#bookmarks" class="btn btn-outline">
                 <i class="fas fa-bookmark"></i> Lihat Bookmark
               </a>
             </div>
@@ -167,10 +167,28 @@ export default class DetailStoryPage {
       `;
 
       this._attachBookmarkEventListeners();
+
+      if (story.lat && story.lon) {
+        await this._waitForMapContainer();
+      }
     } catch (error) {
       debugLog("Error rendering story detail:", error);
       this.showErrorMessage(error.message);
     }
+  }
+
+  async _waitForMapContainer() {
+    return new Promise((resolve) => {
+      const checkContainer = () => {
+        const mapContainer = document.getElementById("story-detail-map");
+        if (mapContainer && mapContainer.offsetParent !== null) {
+          resolve();
+        } else {
+          setTimeout(checkContainer, 50);
+        }
+      };
+      checkContainer();
+    });
   }
 
   _attachBookmarkEventListeners() {
@@ -319,15 +337,20 @@ export default class DetailStoryPage {
 
   async initMap(lat, lon, story) {
     try {
-      const L = await loadMapScript();
       const mapContainer = document.getElementById("story-detail-map");
       if (!mapContainer) {
         throw new Error("Map container not found");
       }
 
+      const L = await loadMapScript();
       if (!L) {
         this.handleMapError(new Error("Map tidak tersedia dalam mode offline"));
         return;
+      }
+
+      if (this._map) {
+        this._map.remove();
+        this._map = null;
       }
 
       this._map = L.map("story-detail-map").setView([lat, lon], 13);
@@ -351,6 +374,12 @@ export default class DetailStoryPage {
       `
         )
         .openPopup();
+
+      setTimeout(() => {
+        if (this._map) {
+          this._map.invalidateSize();
+        }
+      }, 100);
     } catch (error) {
       this.handleMapError(error);
     }
