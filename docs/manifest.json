@@ -2,13 +2,13 @@
   "name": "Dicoding Story - Berbagi Cerita",
   "short_name": "Dicoding Story",
   "description": "Aplikasi berbagi cerita dengan komunitas Dicoding",
-  "start_url": "/",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "portrait-primary",
   "theme_color": "#20b2aa",
   "background_color": "#ffffff",
   "lang": "id",
-  "scope": "/",
+  "scope": "./",
   "icons": [
     {
       "src": "favicon-192.png",
@@ -28,7 +28,7 @@
       "name": "Tambah Cerita Baru",
       "short_name": "Tambah",
       "description": "Buat cerita baru dengan cepat",
-      "url": "/#/add",
+      "url": "./#/add",
       "icons": [
         {
           "src": "favicon-192.png",

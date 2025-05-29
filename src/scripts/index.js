@@ -6,6 +6,16 @@ import { initOfflineManager } from "./utils/offline-utils";
 let appInstance = null;
 let offlineManager = null;
 
+const getBasePath = () => {
+  const currentLocation = window.location.pathname;
+  if (currentLocation.includes("/Web-Intermediate1/")) {
+    return "/Web-Intermediate1";
+  }
+  return "";
+};
+
+const basePath = getBasePath();
+
 document.addEventListener("DOMContentLoaded", async () => {
   if (!document.startViewTransition) {
     console.warn(
@@ -63,9 +73,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   if ("serviceWorker" in navigator) {
     try {
       const registration = await navigator.serviceWorker.register(
-        "./service-worker-enhanced.js",
+        `${basePath}/service-worker-enhanced.js`,
         {
-          scope: "./",
+          scope: `${basePath}/`,
           updateViaCache: "none",
         }
       );

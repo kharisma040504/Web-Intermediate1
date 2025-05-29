@@ -2,21 +2,31 @@ importScripts(
   "https://storage.googleapis.com/workbox-cdn/releases/6.6.1/workbox-sw.js"
 );
 
+const getBasePath = () => {
+  const currentLocation = self.location.pathname;
+  if (currentLocation.includes("/Web-Intermediate1/")) {
+    return "/Web-Intermediate1";
+  }
+  return "";
+};
+
+const basePath = getBasePath();
+
 if (workbox) {
   console.log("✅ Workbox loaded successfully");
 
   workbox.core.skipWaiting();
   workbox.core.clientsClaim();
-  
+
   workbox.precaching.precacheAndRoute([
-    { url: "/", revision: "1" },
-    { url: "/index.html", revision: "1" },
-    { url: "/app.bundle.js", revision: "1" },
-    { url: "/app.css", revision: "1" },
-    { url: "/manifest.json", revision: "1" },
-    { url: "/favicon.png", revision: "1" },
-    { url: "/favicon-192.png", revision: "1" },
-    { url: "/favicon-512.png", revision: "1" },
+    { url: `${basePath}/`, revision: "1" },
+    { url: `${basePath}/index.html`, revision: "1" },
+    { url: `${basePath}/app.bundle.js`, revision: "1" },
+    { url: `${basePath}/app.css`, revision: "1" },
+    { url: `${basePath}/manifest.json`, revision: "1" },
+    { url: `${basePath}/favicon.png`, revision: "1" },
+    { url: `${basePath}/favicon-192.png`, revision: "1" },
+    { url: `${basePath}/favicon-512.png`, revision: "1" },
   ]);
 
   workbox.routing.registerRoute(
@@ -41,7 +51,7 @@ if (workbox) {
                     id: "offline-1",
                     name: "Story Offline",
                     description: "Story ini tersedia saat offline",
-                    photoUrl: "/favicon-192.png",
+                    photoUrl: `${basePath}/favicon-192.png`,
                     createdAt: new Date().toISOString(),
                     lat: -6.2088,
                     lon: 106.8456,
@@ -64,7 +74,7 @@ if (workbox) {
                       id: "offline-1",
                       name: "Story Offline",
                       description: "Story offline tersedia",
-                      photoUrl: "/favicon-192.png",
+                      photoUrl: `${basePath}/favicon-192.png`,
                       createdAt: new Date().toISOString(),
                       lat: -6.2088,
                       lon: 106.8456,
@@ -121,9 +131,9 @@ if (workbox) {
       cacheName: "pages-cache",
       plugins: [
         {
-          cacheKeyWillBeUsed: async () => "/index.html",
+          cacheKeyWillBeUsed: async () => `${basePath}/index.html`,
           handlerDidError: async () => {
-            return caches.match("/index.html");
+            return caches.match(`${basePath}/index.html`);
           },
         },
       ],
@@ -147,13 +157,13 @@ self.addEventListener("push", (event) => {
   const title = data.title || "Story berhasil dibuat";
   const options = {
     body: data.options?.body || "Anda telah membuat story baru",
-    icon: "/favicon.png",
-    badge: "/favicon.png",
+    icon: `${basePath}/favicon.png`,
+    badge: `${basePath}/favicon.png`,
     tag: "story-notification",
     renotify: true,
     requireInteraction: true,
     data: {
-      url: data.url || "/",
+      url: data.url || `${basePath}/`,
     },
   };
 
@@ -163,7 +173,7 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
 
-  const urlToOpen = event.notification.data?.url || "/";
+  const urlToOpen = event.notification.data?.url || `${basePath}/`;
 
   event.waitUntil(
     clients
@@ -185,10 +195,10 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-self.addEventListener('install', (event) => {
+self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', (event) => {
+self.addEventListener("activate", (event) => {
   event.waitUntil(clients.claim());
 });
