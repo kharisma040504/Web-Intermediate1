@@ -2,9 +2,9 @@ const path = require("path");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
-const isProduction = process.env.NODE_ENV === "production";
-const outputPath = isProduction ? "docs" : "dist";
-const publicPath = isProduction ? "/Web-Intermediate1/" : "/";
+const isGitHubPages = process.env.GITHUB_PAGES === "true";
+const outputPath = "dist";
+const publicPath = isGitHubPages ? "/Web-Intermediate1/" : "/";
 
 module.exports = {
   entry: {
